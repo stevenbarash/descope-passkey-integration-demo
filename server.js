@@ -105,7 +105,7 @@ app.post('/api/passkey/signup/start', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.signUp.start(
+    const resp = await descopeClient.auth.webauthn.signUp.start(
       email,
       origin,
       email
@@ -146,7 +146,7 @@ app.post('/api/passkey/signup/finish', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.signUp.finish(
+    const resp = await descopeClient.auth.webauthn.signUp.finish(
       transactionId,
       JSON.stringify(response)
     );
@@ -199,7 +199,7 @@ app.post('/api/passkey/signin/start', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.signIn.start(email, origin);
+    const resp = await descopeClient.auth.webauthn.signIn.start(email, origin);
 
     if (!resp.ok) {
       return res.status(400).json({
@@ -234,7 +234,7 @@ app.post('/api/passkey/signin/finish', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.signIn.finish(
+    const resp = await descopeClient.auth.webauthn.signIn.finish(
       transactionId,
       JSON.stringify(response)
     );
@@ -287,7 +287,7 @@ app.post('/api/passkey/update/start', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.update.start(
+    const resp = await descopeClient.auth.webauthn.update.start(
       email,
       origin,
       refreshToken
@@ -326,7 +326,7 @@ app.post('/api/passkey/update/finish', async (req, res) => {
   }
 
   try {
-    const resp = await descopeClient.webauthn.update.finish(
+    const resp = await descopeClient.auth.webauthn.update.finish(
       transactionId,
       JSON.stringify(response)
     );

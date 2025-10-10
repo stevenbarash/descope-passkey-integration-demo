@@ -504,7 +504,19 @@
 
                 // Prepare credential request options
                 const options = startData.options;
-                const publicKeyData = options.publicKey || options;
+                
+                // Handle nested publicKey structure - Descope returns options.publicKey.publicKey
+                let publicKeyData;
+                if (options.publicKey && options.publicKey.publicKey) {
+                    // Double nested structure
+                    publicKeyData = options.publicKey.publicKey;
+                } else if (options.publicKey) {
+                    // Single nested structure
+                    publicKeyData = options.publicKey;
+                } else {
+                    // Direct structure
+                    publicKeyData = options;
+                }
                 
                 const publicKeyOptions = {
                     challenge: base64urlToArrayBuffer(publicKeyData.challenge),
@@ -625,8 +637,19 @@
                 // Prepare credential creation options
                 const options = startData.options;
                 
-                // Check if options is already the publicKey object or contains publicKey
-                const publicKeyData = options.publicKey || options;
+                // Handle nested publicKey structure - Descope returns options.publicKey.publicKey
+                let publicKeyData;
+                if (options.publicKey && options.publicKey.publicKey) {
+                    // Double nested structure
+                    publicKeyData = options.publicKey.publicKey;
+                } else if (options.publicKey) {
+                    // Single nested structure
+                    publicKeyData = options.publicKey;
+                } else {
+                    // Direct structure
+                    publicKeyData = options;
+                }
+                
                 console.log('Public key data:', publicKeyData);
                 
                 const publicKeyOptions = {
