@@ -350,14 +350,19 @@
             // Check if browser supports conditional mediation
             if (!window.PublicKeyCredential || 
                 !PublicKeyCredential.isConditionalMediationAvailable) {
+                console.log('ℹ️ Passkey autofill not supported in this browser');
                 return;
             }
 
             try {
                 const available = await PublicKeyCredential.isConditionalMediationAvailable();
+                console.log('✓ Conditional mediation available:', available);
                 if (!available) {
+                    console.log('⚠️ Browser does not support passkey autofill');
                     return;
                 }
+                
+                console.log('🔑 Passkey autofill enabled - click the email field to see your passkeys');
 
                 // Start sign-in without email (discoverable credential)
                 const startResponse = await fetch('/api/passkey/signin/start', {
@@ -432,11 +437,18 @@
 
                 const finishData = await finishResponse.json();
                 if (finishResponse.ok && finishData.success) {
+                    console.log('✅ Successfully authenticated with passkey autofill!');
                     showToken(finishData.token, finishData.email, finishData.descopeSession);
                 }
             } catch (error) {
                 // Silently fail - don't show errors for automatic authentication
-                console.log('Auto passkey authentication not available or cancelled');
+                if (error.name === 'NotAllowedError') {
+                    console.log('ℹ️ Passkey autofill: User cancelled or no action taken');
+                } else if (error.name === 'AbortError') {
+                    console.log('ℹ️ Passkey autofill: Request aborted');
+                } else {
+                    console.log('ℹ️ Passkey autofill not used or not available:', error.message);
+                }
             }
         }
 
@@ -757,8 +769,17 @@
                     pubKeyCredParams: publicKeyData.pubKeyCredParams,
                     timeout: publicKeyData.timeout,
                     attestation: publicKeyData.attestation,
-                    authenticatorSelection: publicKeyData.authenticatorSelection
+                    authenticatorSelection: publicKeyData.authenticatorSelection || {
+                        requireResidentKey: true,
+                        residentKey: "required",
+                        userVerification: "preferred"
+                    }
                 };
+
+                // Log if we're creating a discoverable credential
+                const isDiscoverable = publicKeyOptions.authenticatorSelection?.residentKey === "required" || 
+                                      publicKeyOptions.authenticatorSelection?.requireResidentKey === true;
+                console.log('🔐 Creating passkey as', isDiscoverable ? 'discoverable credential (will work with autofill)' : 'non-discoverable credential');
 
                 // Create credential
                 const credential = await navigator.credentials.create({

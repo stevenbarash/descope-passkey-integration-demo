@@ -7,6 +7,7 @@ A simple Node.js login application that generates JWT tokens for authentication,
 - Simple and modern login interface with tabs
 - **Password authentication**: Accepts any email, password is always "password"
 - **Passkey authentication**: WebAuthn-based biometric/security key login using Descope
+- **🆕 Automatic Passkey Detection**: Passkeys automatically appear in browser/1Password autofill (conditional UI)
 - JWT token generation for both methods
 - Environment-based configuration
 - Token verification endpoint
@@ -211,6 +212,41 @@ Health check endpoint.
   "passkeysEnabled": true
 }
 ```
+
+## Passkey Autofill Setup
+
+This application includes **automatic passkey detection** using WebAuthn Conditional UI. When properly configured, passkeys will automatically appear in your browser's autofill (like 1Password) when you click the email field.
+
+### Quick Setup Steps:
+
+1. **Ensure your browser supports conditional UI:**
+   - Chrome/Edge 108+
+   - Safari 16+  
+   - Firefox 119+
+
+2. **Configure your Descope project:**
+   - Go to [Descope Console](https://app.descope.com) → Settings → Authentication Methods → Passkeys
+   - Set **Top Level Domain** to `localhost` (for local dev) or your actual domain (for production)
+
+3. **Register a new passkey:**
+   - Go to the Passkey tab in the app
+   - Click "Register New Passkey"
+   - Complete the biometric prompt
+   - The passkey is now stored as a **discoverable credential**
+
+4. **Test autofill:**
+   - Reload the page
+   - Click the email field on the Password tab
+   - Your passkey should appear in the browser's autofill dropdown 🎉
+
+### Troubleshooting
+
+If passkeys don't appear in autofill:
+- Check browser console for helpful debug messages
+- Delete and re-register your passkey (it needs to be a "discoverable credential")
+- Verify domain configuration in Descope matches your current domain exactly
+
+📖 **For detailed setup instructions and troubleshooting, see [PASSKEY_AUTOFILL_SETUP.md](PASSKEY_AUTOFILL_SETUP.md)**
 
 ## Security Notes
 
