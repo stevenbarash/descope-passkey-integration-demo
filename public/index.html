@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - JWT Demo with Passkeys</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .message.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .token-display {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .token-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .token-box {
+            background: #f8f9fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 12px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #495057;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .hint {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .hint strong {
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e1e8ed;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .passkey-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .passkey-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .passkey-button:active {
+            transform: translateY(0);
+        }
+
+        .passkey-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .passkey-button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .passkey-button.secondary:hover {
+            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .info-box {
+            padding: 12px;
+            background: #e8f4fd;
+            border: 1px solid #b3d9f2;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #0c5460;
+            margin-bottom: 20px;
+        }
+
+        .info-box strong {
+            color: #073642;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome Back</h1>
+        <p class="subtitle">Sign in to get your JWT token</p>
+        
+        <div class="tabs" id="authTabs">
+            <button class="tab active" data-tab="password">Password</button>
+            <button class="tab" data-tab="passkey" id="passkeyTab">Passkey</button>
+        </div>
+
+        <!-- Password Login Tab -->
+        <div id="password-tab" class="tab-content active">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="your.email@example.com"
+                        required
+                        autocomplete="email"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                
+                <button type="submit" id="submitBtn">Sign In</button>
+            </form>
+
+            <div class="hint">
+                <strong>Hint:</strong> Use any email address. The password is always <strong>"password"</strong>
+            </div>
+        </div>
+
+        <!-- Passkey Tab -->
+        <div id="passkey-tab" class="tab-content">
+            <div class="info-box">
+                <strong>🔐 Secure Authentication</strong><br>
+                Use biometrics (fingerprint, face recognition) or security keys to sign in securely without passwords.
+            </div>
+
+            <div class="form-group">
+                <label for="passkeyEmail">Email</label>
+                <input 
+                    type="email" 
+                    id="passkeyEmail" 
+                    name="passkeyEmail" 
+                    placeholder="your.email@example.com"
+                    autocomplete="email webauthn"
+                >
+            </div>
+
+            <button class="passkey-button" id="passkeySignInBtn">
+                🔑 Sign In with Passkey
+            </button>
+
+            <button class="passkey-button secondary" id="passkeyRegisterBtn">
+                ✨ Register New Passkey
+            </button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div id="tokenDisplay" class="token-display">
+            <div class="token-label">Your JWT Token:</div>
+            <div id="tokenBox" class="token-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // Check if passkeys are enabled
+        fetch('/health')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.passkeysEnabled) {
+                    const passkeyTab = document.getElementById('passkeyTab');
+                    passkeyTab.style.opacity = '0.5';
+                    passkeyTab.style.cursor = 'not-allowed';
+                    passkeyTab.title = 'Passkeys require DESCOPE_PROJECT_ID and domain configuration';
+                    
+                    // Add warning in passkey tab
+                    const passkeyTabContent = document.getElementById('passkey-tab');
+                    passkeyTabContent.innerHTML = `
+                        <div class="message error" style="display: block;">
+                            <strong>⚠️ Passkeys Not Configured</strong><br><br>
+                            To enable passkey authentication:<br>
+                            1. Set DESCOPE_PROJECT_ID in your .env file<br>
+                            2. Add "localhost" to your Descope project's WebAuthn domains<br>
+                            3. Restart the server<br><br>
+                            <a href="https://docs.descope.com/auth-methods/passkeys/settings" target="_blank" style="color: #667eea; text-decoration: underline;">View Setup Guide</a>
+                        </div>
+                    `;
+                }
+            })
+            .catch(() => {});
+
+        // Tab switching
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+
+                // Reset displays
+                message.style.display = 'none';
+                tokenDisplay.style.display = 'none';
+            });
+        });
+
+        // Common elements
+        const message = document.getElementById('message');
+        const tokenDisplay = document.getElementById('tokenDisplay');
+        const tokenBox = document.getElementById('tokenBox');
+
+        // Helper function to show message
+        function showMessage(text, isError = false) {
+            message.className = isError ? 'message error' : 'message success';
+            message.textContent = text;
+            message.style.display = 'block';
+        }
+
+        // Helper function to show token
+        function showToken(token, email) {
+            message.className = 'message success';
+            message.textContent = `Successfully logged in as ${email}`;
+            message.style.display = 'block';
+            tokenBox.textContent = token;
+            tokenDisplay.style.display = 'block';
+        }
+
+        // Password Login
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            message.style.display = 'none';
+            tokenDisplay.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToken(data.token, data.email);
+                } else {
+                    showMessage(data.error || 'Login failed. Please try again.', true);
+                }
+            } catch (error) {
+                showMessage('Network error. Please check if the server is running.', true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+
+        // Passkey functionality
+        const passkeySignInBtn = document.getElementById('passkeySignInBtn');
+        const passkeyRegisterBtn = document.getElementById('passkeyRegisterBtn');
+        const passkeyEmail = document.getElementById('passkeyEmail');
+
+        // Helper to convert base64url to ArrayBuffer
+        function base64urlToArrayBuffer(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // Helper to convert ArrayBuffer to base64url
+        function arrayBufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        // Passkey Sign-In
+        passkeySignInBtn.addEventListener('click', async () => {
+            const email = passkeyEmail.value;
+            if (!email) {
+                showMessage('Please enter your email address', true);
+                return;
+            }
+
+            message.style.display = 'none';
+            tokenDisplay.style.display = 'none';
+            passkeySignInBtn.disabled = true;
+            passkeySignInBtn.textContent = '🔄 Starting...';
+
+            try {
+                // Start sign-in
+                const startResponse = await fetch('/passkey/signin/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        origin: window.location.origin 
+                    })
+                });
+
+                const startData = await startResponse.json();
+                if (!startResponse.ok || !startData.success) {
+                    const errorMsg = startData.details?.errorDescription || startData.error || 'Failed to start sign-in';
+                    throw new Error(errorMsg);
+                }
+
+                passkeySignInBtn.textContent = '👆 Use your passkey...';
+
+                // Prepare credential request options
+                const options = startData.options;
+                const publicKeyOptions = {
+                    challenge: base64urlToArrayBuffer(options.publicKey.challenge),
+                    timeout: options.publicKey.timeout,
+                    rpId: options.publicKey.rpId,
+                    allowCredentials: options.publicKey.allowCredentials?.map(cred => ({
+                        ...cred,
+                        id: base64urlToArrayBuffer(cred.id)
+                    })),
+                    userVerification: options.publicKey.userVerification
+                };
+
+                // Get credential from authenticator
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyOptions
+                });
+
+                passkeySignInBtn.textContent = '✅ Verifying...';
+
+                // Finish sign-in
+                const credentialResponse = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64url(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        authenticatorData: arrayBufferToBase64url(credential.response.authenticatorData),
+                        clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON),
+                        signature: arrayBufferToBase64url(credential.response.signature),
+                        userHandle: credential.response.userHandle ? arrayBufferToBase64url(credential.response.userHandle) : null
+                    }
+                };
+
+                const finishResponse = await fetch('/passkey/signin/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId: startData.transactionId,
+                        response: credentialResponse
+                    })
+                });
+
+                const finishData = await finishResponse.json();
+                if (!finishResponse.ok || !finishData.success) {
+                    throw new Error(finishData.error || 'Failed to complete sign-in');
+                }
+
+                showToken(finishData.token, finishData.email);
+            } catch (error) {
+                showMessage(error.message || 'Passkey sign-in failed', true);
+            } finally {
+                passkeySignInBtn.disabled = false;
+                passkeySignInBtn.textContent = '🔑 Sign In with Passkey';
+            }
+        });
+
+        // Passkey Registration
+        passkeyRegisterBtn.addEventListener('click', async () => {
+            const email = passkeyEmail.value;
+            if (!email) {
+                showMessage('Please enter your email address', true);
+                return;
+            }
+
+            message.style.display = 'none';
+            tokenDisplay.style.display = 'none';
+            passkeyRegisterBtn.disabled = true;
+            passkeyRegisterBtn.textContent = '🔄 Starting...';
+
+            try {
+                // Start sign-up
+                const startResponse = await fetch('/passkey/signup/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        origin: window.location.origin 
+                    })
+                });
+
+                const startData = await startResponse.json();
+                if (!startResponse.ok || !startData.success) {
+                    const errorMsg = startData.details?.errorDescription || startData.error || 'Failed to start registration';
+                    throw new Error(errorMsg);
+                }
+
+                passkeyRegisterBtn.textContent = '👆 Create your passkey...';
+
+                // Prepare credential creation options
+                const options = startData.options;
+                const publicKeyOptions = {
+                    challenge: base64urlToArrayBuffer(options.publicKey.challenge),
+                    rp: options.publicKey.rp,
+                    user: {
+                        ...options.publicKey.user,
+                        id: base64urlToArrayBuffer(options.publicKey.user.id)
+                    },
+                    pubKeyCredParams: options.publicKey.pubKeyCredParams,
+                    timeout: options.publicKey.timeout,
+                    attestation: options.publicKey.attestation,
+                    authenticatorSelection: options.publicKey.authenticatorSelection
+                };
+
+                // Create credential
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyOptions
+                });
+
+                passkeyRegisterBtn.textContent = '✅ Verifying...';
+
+                // Finish sign-up
+                const credentialResponse = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64url(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        attestationObject: arrayBufferToBase64url(credential.response.attestationObject),
+                        clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON)
+                    }
+                };
+
+                const finishResponse = await fetch('/passkey/signup/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId: startData.transactionId,
+                        response: credentialResponse
+                    })
+                });
+
+                const finishData = await finishResponse.json();
+                if (!finishResponse.ok || !finishData.success) {
+                    throw new Error(finishData.error || 'Failed to complete registration');
+                }
+
+                showToken(finishData.token, finishData.email);
+            } catch (error) {
+                showMessage(error.message || 'Passkey registration failed', true);
+            } finally {
+                passkeyRegisterBtn.disabled = false;
+                passkeyRegisterBtn.textContent = '✨ Register New Passkey';
+            }
+        });
+    </script>
+</body>
+</html>
+
