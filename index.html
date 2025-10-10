@@ -256,17 +256,17 @@
         <!-- Password Login Tab -->
         <div id="password-tab" class="tab-content active">
             <form id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        name="email" 
-                        placeholder="your.email@example.com"
-                        required
-                        autocomplete="email"
-                    >
-                </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="your.email@example.com"
+                    required
+                    autocomplete="email webauthn"
+                >
+            </div>
                 
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -324,10 +324,128 @@
     </div>
 
     <script>
+        // Helper to convert base64url to ArrayBuffer
+        function base64urlToArrayBuffer(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // Helper to convert ArrayBuffer to base64url
+        function arrayBufferToBase64url(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        // Automatic passkey authentication on page load
+        async function attemptAutoPasskeyAuth() {
+            // Check if browser supports conditional mediation
+            if (!window.PublicKeyCredential || 
+                !PublicKeyCredential.isConditionalMediationAvailable) {
+                return;
+            }
+
+            try {
+                const available = await PublicKeyCredential.isConditionalMediationAvailable();
+                if (!available) {
+                    return;
+                }
+
+                // Start sign-in without email (discoverable credential)
+                const startResponse = await fetch('/api/passkey/signin/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: '', // Empty email for conditional UI
+                        origin: window.location.origin 
+                    })
+                });
+
+                const startData = await startResponse.json();
+                if (!startResponse.ok || !startData.success) {
+                    return; // Silently fail for auto-auth
+                }
+
+                // Prepare credential request options
+                const options = startData.options;
+                
+                // Handle nested publicKey structure
+                let publicKeyData;
+                if (options.publicKey && options.publicKey.publicKey) {
+                    publicKeyData = options.publicKey.publicKey;
+                } else if (options.publicKey) {
+                    publicKeyData = options.publicKey;
+                } else {
+                    publicKeyData = options;
+                }
+                
+                const publicKeyOptions = {
+                    challenge: base64urlToArrayBuffer(publicKeyData.challenge),
+                    timeout: publicKeyData.timeout,
+                    rpId: publicKeyData.rpId,
+                    allowCredentials: publicKeyData.allowCredentials?.map(cred => ({
+                        ...cred,
+                        id: base64urlToArrayBuffer(cred.id)
+                    })) || [],
+                    userVerification: publicKeyData.userVerification
+                };
+
+                // Get credential with conditional mediation (shows in autofill)
+                const credential = await navigator.credentials.get({
+                    publicKey: publicKeyOptions,
+                    mediation: 'conditional'
+                });
+
+                if (!credential) {
+                    return;
+                }
+
+                // User selected a passkey, complete authentication
+                const credentialResponse = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64url(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        authenticatorData: arrayBufferToBase64url(credential.response.authenticatorData),
+                        clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON),
+                        signature: arrayBufferToBase64url(credential.response.signature),
+                        userHandle: credential.response.userHandle ? arrayBufferToBase64url(credential.response.userHandle) : null
+                    }
+                };
+
+                const finishResponse = await fetch('/api/passkey/signin/finish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionId: startData.transactionId,
+                        response: credentialResponse
+                    })
+                });
+
+                const finishData = await finishResponse.json();
+                if (finishResponse.ok && finishData.success) {
+                    showToken(finishData.token, finishData.email, finishData.descopeSession);
+                }
+            } catch (error) {
+                // Silently fail - don't show errors for automatic authentication
+                console.log('Auto passkey authentication not available or cancelled');
+            }
+        }
+
         // Check if passkeys are enabled
+        let passkeysEnabled = false;
         fetch('/api/health')
             .then(r => r.json())
             .then(data => {
+                passkeysEnabled = data.passkeysEnabled;
                 if (!data.passkeysEnabled) {
                     const passkeyTab = document.getElementById('passkeyTab');
                     passkeyTab.style.opacity = '0.5';
@@ -346,6 +464,9 @@
                             <a href="https://docs.descope.com/auth-methods/passkeys/settings" target="_blank" style="color: #667eea; text-decoration: underline;">View Setup Guide</a>
                         </div>
                     `;
+                } else {
+                    // Attempt automatic passkey authentication
+                    attemptAutoPasskeyAuth();
                 }
             })
             .catch(() => {});
@@ -448,27 +569,6 @@
 
         // Store session data
         let currentSession = null;
-
-        // Helper to convert base64url to ArrayBuffer
-        function base64urlToArrayBuffer(base64url) {
-            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-            const binary = atob(base64);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                bytes[i] = binary.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        // Helper to convert ArrayBuffer to base64url
-        function arrayBufferToBase64url(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
 
         // Passkey Sign-In
         passkeySignInBtn.addEventListener('click', async () => {

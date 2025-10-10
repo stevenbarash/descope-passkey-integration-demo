@@ -192,12 +192,14 @@ app.post('/api/passkey/signin/start', async (req, res) => {
 
   const { email, origin } = req.body;
 
-  if (!email || !origin) {
-    return res.status(400).json({ error: 'Email and origin are required' });
+  if (!origin) {
+    return res.status(400).json({ error: 'Origin is required' });
   }
 
   try {
-    const resp = await descopeClient.webauthn.signIn.start(email, origin);
+    // Support discoverable credentials (empty email for conditional UI)
+    const loginId = email || '';
+    const resp = await descopeClient.webauthn.signIn.start(loginId, origin);
 
     if (!resp.ok) {
       return res.status(400).json({
