@@ -629,9 +629,6 @@
                     throw new Error(errorMsg || 'Failed to start registration');
                 }
 
-                console.log('Start data received:', startData);
-                console.log('Options structure:', startData.options);
-
                 passkeyRegisterBtn.textContent = requiresAuth ? '👆 Add passkey to your account...' : '👆 Create your passkey...';
 
                 // Prepare credential creation options
@@ -649,8 +646,6 @@
                     // Direct structure
                     publicKeyData = options;
                 }
-                
-                console.log('Public key data:', publicKeyData);
                 
                 const publicKeyOptions = {
                     challenge: base64urlToArrayBuffer(publicKeyData.challenge),
