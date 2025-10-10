@@ -9,6 +9,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 const DESCOPE_PROJECT_ID = process.env.DESCOPE_PROJECT_ID;
 
+// Validate required environment variables
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set');
+  throw new Error('JWT_SECRET is required');
+}
+
 // Initialize Descope client
 let descopeClient;
 try {
