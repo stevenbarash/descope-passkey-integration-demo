@@ -504,15 +504,17 @@
 
                 // Prepare credential request options
                 const options = startData.options;
+                const publicKeyData = options.publicKey || options;
+                
                 const publicKeyOptions = {
-                    challenge: base64urlToArrayBuffer(options.publicKey.challenge),
-                    timeout: options.publicKey.timeout,
-                    rpId: options.publicKey.rpId,
-                    allowCredentials: options.publicKey.allowCredentials?.map(cred => ({
+                    challenge: base64urlToArrayBuffer(publicKeyData.challenge),
+                    timeout: publicKeyData.timeout,
+                    rpId: publicKeyData.rpId,
+                    allowCredentials: publicKeyData.allowCredentials?.map(cred => ({
                         ...cred,
                         id: base64urlToArrayBuffer(cred.id)
                     })),
-                    userVerification: options.publicKey.userVerification
+                    userVerification: publicKeyData.userVerification
                 };
 
                 // Get credential from authenticator
@@ -615,21 +617,29 @@
                     throw new Error(errorMsg || 'Failed to start registration');
                 }
 
+                console.log('Start data received:', startData);
+                console.log('Options structure:', startData.options);
+
                 passkeyRegisterBtn.textContent = requiresAuth ? '👆 Add passkey to your account...' : '👆 Create your passkey...';
 
                 // Prepare credential creation options
                 const options = startData.options;
+                
+                // Check if options is already the publicKey object or contains publicKey
+                const publicKeyData = options.publicKey || options;
+                console.log('Public key data:', publicKeyData);
+                
                 const publicKeyOptions = {
-                    challenge: base64urlToArrayBuffer(options.publicKey.challenge),
-                    rp: options.publicKey.rp,
+                    challenge: base64urlToArrayBuffer(publicKeyData.challenge),
+                    rp: publicKeyData.rp,
                     user: {
-                        ...options.publicKey.user,
-                        id: base64urlToArrayBuffer(options.publicKey.user.id)
+                        ...publicKeyData.user,
+                        id: base64urlToArrayBuffer(publicKeyData.user.id)
                     },
-                    pubKeyCredParams: options.publicKey.pubKeyCredParams,
-                    timeout: options.publicKey.timeout,
-                    attestation: options.publicKey.attestation,
-                    authenticatorSelection: options.publicKey.authenticatorSelection
+                    pubKeyCredParams: publicKeyData.pubKeyCredParams,
+                    timeout: publicKeyData.timeout,
+                    attestation: publicKeyData.attestation,
+                    authenticatorSelection: publicKeyData.authenticatorSelection
                 };
 
                 // Create credential

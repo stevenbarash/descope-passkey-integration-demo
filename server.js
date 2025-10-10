@@ -118,6 +118,8 @@ app.post('/api/passkey/signup/start', async (req, res) => {
       });
     }
 
+    console.log('Descope signup response:', JSON.stringify(resp.data, null, 2));
+
     res.json({
       success: true,
       transactionId: resp.data.transactionId,
