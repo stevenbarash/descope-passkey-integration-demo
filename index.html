@@ -385,12 +385,21 @@
         }
 
         // Helper function to show token
-        function showToken(token, email) {
+        function showToken(token, email, descopeSession) {
             message.className = 'message success';
             message.textContent = `Successfully logged in as ${email}`;
             message.style.display = 'block';
             tokenBox.textContent = token;
             tokenDisplay.style.display = 'block';
+            
+            // Store session data for adding additional passkeys
+            if (descopeSession) {
+                currentSession = {
+                    email: email,
+                    refreshToken: descopeSession.refreshToken,
+                    sessionToken: descopeSession.sessionToken
+                };
+            }
         }
 
         // Password Login
@@ -436,6 +445,9 @@
         const passkeySignInBtn = document.getElementById('passkeySignInBtn');
         const passkeyRegisterBtn = document.getElementById('passkeyRegisterBtn');
         const passkeyEmail = document.getElementById('passkeyEmail');
+
+        // Store session data
+        let currentSession = null;
 
         // Helper to convert base64url to ArrayBuffer
         function base64urlToArrayBuffer(base64url) {
@@ -537,7 +549,7 @@
                     throw new Error(finishData.error || 'Failed to complete sign-in');
                 }
 
-                showToken(finishData.token, finishData.email);
+                showToken(finishData.token, finishData.email, finishData.descopeSession);
             } catch (error) {
                 showMessage(error.message || 'Passkey sign-in failed', true);
             } finally {
@@ -560,23 +572,50 @@
             passkeyRegisterBtn.textContent = '🔄 Starting...';
 
             try {
-                // Start sign-up
-                const startResponse = await fetch('/api/passkey/signup/start', {
+                let endpoint, requiresAuth = false;
+                
+                // Check if user is authenticated and wants to add additional passkey
+                if (currentSession && currentSession.email === email) {
+                    endpoint = '/api/passkey/update/start';
+                    requiresAuth = true;
+                } else {
+                    endpoint = '/api/passkey/signup/start';
+                }
+
+                // Start sign-up or update
+                const requestBody = { 
+                    email, 
+                    origin: window.location.origin 
+                };
+                
+                if (requiresAuth) {
+                    requestBody.refreshToken = currentSession.refreshToken;
+                }
+
+                const startResponse = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        email, 
-                        origin: window.location.origin 
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const startData = await startResponse.json();
+                
+                // Handle "user already exists" error
                 if (!startResponse.ok || !startData.success) {
-                    const errorMsg = startData.details?.errorDescription || startData.error || 'Failed to start registration';
-                    throw new Error(errorMsg);
+                    const errorMsg = startData.details?.errorDescription || startData.error || '';
+                    
+                    // Check if user exists and needs to sign in first
+                    if (errorMsg.toLowerCase().includes('user') && errorMsg.toLowerCase().includes('exist')) {
+                        showMessage('This email already has an account. Please sign in first, then you can add additional passkeys.', true);
+                        passkeyRegisterBtn.disabled = false;
+                        passkeyRegisterBtn.textContent = '✨ Register New Passkey';
+                        return;
+                    }
+                    
+                    throw new Error(errorMsg || 'Failed to start registration');
                 }
 
-                passkeyRegisterBtn.textContent = '👆 Create your passkey...';
+                passkeyRegisterBtn.textContent = requiresAuth ? '👆 Add passkey to your account...' : '👆 Create your passkey...';
 
                 // Prepare credential creation options
                 const options = startData.options;
@@ -600,7 +639,7 @@
 
                 passkeyRegisterBtn.textContent = '✅ Verifying...';
 
-                // Finish sign-up
+                // Finish sign-up or update
                 const credentialResponse = {
                     id: credential.id,
                     rawId: arrayBufferToBase64url(credential.rawId),
@@ -611,7 +650,8 @@
                     }
                 };
 
-                const finishResponse = await fetch('/api/passkey/signup/finish', {
+                const finishEndpoint = requiresAuth ? '/api/passkey/update/finish' : '/api/passkey/signup/finish';
+                const finishResponse = await fetch(finishEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -625,7 +665,13 @@
                     throw new Error(finishData.error || 'Failed to complete registration');
                 }
 
-                showToken(finishData.token, finishData.email);
+                if (requiresAuth) {
+                    // Adding passkey to existing account
+                    showMessage('✅ Passkey successfully added to your account!', false);
+                } else {
+                    // New user signup
+                    showToken(finishData.token, finishData.email, finishData.descopeSession);
+                }
             } catch (error) {
                 showMessage(error.message || 'Passkey registration failed', true);
             } finally {

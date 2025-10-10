@@ -266,6 +266,82 @@ app.post('/api/passkey/signin/finish', async (req, res) => {
   }
 });
 
+// Passkey Update Start (Add passkey to existing user)
+app.post('/api/passkey/update/start', async (req, res) => {
+  if (!descopeClient) {
+    return res.status(503).json({ error: 'Passkey authentication not configured' });
+  }
+
+  const { email, origin, refreshToken } = req.body;
+
+  if (!email || !origin || !refreshToken) {
+    return res.status(400).json({ error: 'Email, origin, and refresh token are required' });
+  }
+
+  try {
+    const resp = await descopeClient.webauthn.update.start(
+      email,
+      origin,
+      refreshToken
+    );
+
+    if (!resp.ok) {
+      return res.status(400).json({
+        error: 'Failed to start passkey update',
+        details: resp.error
+      });
+    }
+
+    res.json({
+      success: true,
+      transactionId: resp.data.transactionId,
+      options: resp.data.options
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
+// Passkey Update Finish (Complete adding passkey to existing user)
+app.post('/api/passkey/update/finish', async (req, res) => {
+  if (!descopeClient) {
+    return res.status(503).json({ error: 'Passkey authentication not configured' });
+  }
+
+  const { transactionId, response } = req.body;
+
+  if (!transactionId || !response) {
+    return res.status(400).json({ error: 'Transaction ID and response are required' });
+  }
+
+  try {
+    const resp = await descopeClient.webauthn.update.finish(
+      transactionId,
+      JSON.stringify(response)
+    );
+
+    if (!resp.ok) {
+      return res.status(400).json({
+        error: 'Failed to finish passkey update',
+        details: resp.error
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Passkey successfully added to your account'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
