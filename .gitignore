@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 *.log
 
+# Ignore all markdown files except README.md
+*.md
+!README.md
+

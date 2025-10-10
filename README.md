@@ -20,6 +20,10 @@ Install dependencies using pnpm:
 pnpm install
 ```
 
+## Deployment
+
+This app is ready to deploy on Vercel. See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
 ## Configuration
 
 The application uses environment variables for configuration. Create a `.env` file in the project root:

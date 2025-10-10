@@ -1,19 +1,26 @@
 {
   "name": "passkeys-demo-app",
   "version": "1.0.0",
-  "description": "Simple login application with JWT authentication",
+  "description": "Simple login application with JWT authentication and passkeys support",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "vercel-build": "echo 'Build complete'"
   },
   "keywords": [
     "jwt",
     "authentication",
-    "login"
+    "login",
+    "passkeys",
+    "webauthn",
+    "descope"
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.x"
+  },
   "dependencies": {
     "@descope/node-sdk": "^1.7.16",
     "cors": "^2.8.5",
