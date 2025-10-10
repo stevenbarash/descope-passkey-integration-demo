@@ -2,11 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const path = require('path');
 const DescopeClient = require('@descope/node-sdk');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 const DESCOPE_PROJECT_ID = process.env.DESCOPE_PROJECT_ID;
@@ -27,10 +25,6 @@ try {
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from root and public directory
-app.use(express.static('.'));
-app.use(express.static('public'));
 
 // Login endpoint
 app.post('/api/login', (req, res) => {
@@ -274,8 +268,5 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Start server for local development
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+module.exports = app;
 
