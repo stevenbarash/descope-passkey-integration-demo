@@ -154,41 +154,33 @@
             color: #333;
         }
 
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e1e8ed;
+        .passkey-section {
+            margin-top: 30px;
+            padding-top: 20px;
         }
 
-        .tab {
-            padding: 12px 24px;
-            background: none;
-            border: none;
-            border-bottom: 3px solid transparent;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e1e8ed;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
             color: #666;
-            transition: all 0.3s ease;
-            margin-bottom: -2px;
-        }
-
-        .tab:hover {
-            color: #667eea;
-        }
-
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
+            font-size: 14px;
+            font-weight: 500;
         }
 
         .passkey-button {
@@ -248,14 +240,8 @@
         <h1>Welcome Back</h1>
         <p class="subtitle">Sign in to get your JWT token</p>
         
-        <div class="tabs" id="authTabs">
-            <button class="tab active" data-tab="password">Password</button>
-            <button class="tab" data-tab="passkey" id="passkeyTab">Passkey</button>
-        </div>
-
-        <!-- Password Login Tab -->
-        <div id="password-tab" class="tab-content active">
-            <form id="loginForm">
+        <!-- Main Login Form -->
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input 
@@ -267,43 +253,35 @@
                     autocomplete="email webauthn"
                 >
             </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="Enter your password"
-                        required
-                        autocomplete="current-password"
-                    >
-                </div>
-                
-                <button type="submit" id="submitBtn">Sign In</button>
-            </form>
-
-            <div class="hint">
-                <strong>Hint:</strong> Use any email address. The password is always <strong>"password"</strong>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
             </div>
+            
+            <button type="submit" id="submitBtn">Sign In</button>
+        </form>
+
+        <div class="hint">
+            <strong>Hint:</strong> Use any email address. The password is always <strong>"password"</strong>
         </div>
 
-        <!-- Passkey Tab -->
-        <div id="passkey-tab" class="tab-content">
+        <!-- Passkey Authentication Section -->
+        <div class="passkey-section" id="passkeySection">
+            <div class="divider">
+                <span>or</span>
+            </div>
+
             <div class="info-box">
                 <strong>🔐 Secure Authentication</strong><br>
                 Use biometrics (fingerprint, face recognition) or security keys to sign in securely without passwords.
-            </div>
-
-            <div class="form-group">
-                <label for="passkeyEmail">Email</label>
-                <input 
-                    type="email" 
-                    id="passkeyEmail" 
-                    name="passkeyEmail" 
-                    placeholder="your.email@example.com"
-                    autocomplete="email webauthn"
-                >
             </div>
 
             <button class="passkey-button" id="passkeySignInBtn">
@@ -459,23 +437,22 @@
             .then(data => {
                 passkeysEnabled = data.passkeysEnabled;
                 if (!data.passkeysEnabled) {
-                    const passkeyTab = document.getElementById('passkeyTab');
-                    passkeyTab.style.opacity = '0.5';
-                    passkeyTab.style.cursor = 'not-allowed';
-                    passkeyTab.title = 'Passkeys require DESCOPE_PROJECT_ID and domain configuration';
+                    // Hide passkey section if not configured
+                    const passkeySection = document.getElementById('passkeySection');
+                    passkeySection.style.display = 'none';
                     
-                    // Add warning in passkey tab
-                    const passkeyTabContent = document.getElementById('passkey-tab');
-                    passkeyTabContent.innerHTML = `
-                        <div class="message error" style="display: block;">
-                            <strong>⚠️ Passkeys Not Configured</strong><br><br>
-                            To enable passkey authentication:<br>
-                            1. Set DESCOPE_PROJECT_ID in your environment variables<br>
-                            2. Add your domain to Descope project's WebAuthn domains<br>
-                            3. Redeploy<br><br>
-                            <a href="https://docs.descope.com/auth-methods/passkeys/settings" target="_blank" style="color: #667eea; text-decoration: underline;">View Setup Guide</a>
-                        </div>
+                    // Add warning message
+                    const message = document.getElementById('message');
+                    message.className = 'message error';
+                    message.innerHTML = `
+                        <strong>⚠️ Passkeys Not Configured</strong><br><br>
+                        To enable passkey authentication:<br>
+                        1. Set DESCOPE_PROJECT_ID in your environment variables<br>
+                        2. Add your domain to Descope project's WebAuthn domains<br>
+                        3. Redeploy<br><br>
+                        <a href="https://docs.descope.com/auth-methods/passkeys/settings" target="_blank" style="color: #667eea; text-decoration: underline;">View Setup Guide</a>
                     `;
+                    message.style.display = 'block';
                 } else {
                     // Attempt automatic passkey authentication
                     attemptAutoPasskeyAuth();
@@ -483,27 +460,6 @@
             })
             .catch(() => {});
 
-        // Tab switching
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.dataset.tab;
-                
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(`${tabName}-tab`).classList.add('active');
-
-                // Reset displays
-                message.style.display = 'none';
-                tokenDisplay.style.display = 'none';
-            });
-        });
 
         // Common elements
         const message = document.getElementById('message');
@@ -577,14 +533,14 @@
         // Passkey functionality
         const passkeySignInBtn = document.getElementById('passkeySignInBtn');
         const passkeyRegisterBtn = document.getElementById('passkeyRegisterBtn');
-        const passkeyEmail = document.getElementById('passkeyEmail');
+        const emailInput = document.getElementById('email');
 
         // Store session data
         let currentSession = null;
 
         // Passkey Sign-In
         passkeySignInBtn.addEventListener('click', async () => {
-            const email = passkeyEmail.value;
+            const email = emailInput.value;
             if (!email) {
                 showMessage('Please enter your email address', true);
                 return;
@@ -686,7 +642,7 @@
 
         // Passkey Registration
         passkeyRegisterBtn.addEventListener('click', async () => {
-            const email = passkeyEmail.value;
+            const email = emailInput.value;
             if (!email) {
                 showMessage('Please enter your email address', true);
                 return;
